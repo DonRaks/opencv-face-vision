@@ -1,51 +1,56 @@
 # ==========================================
-# Face Detection using OpenCV
-# Author: Donald (with Anna )
+# Face Detection with Photo Capture
+# Author: Donald (with Anna 😄)
 # ==========================================
 
-# Import OpenCV
+# Import required libraries
 import cv2
+import os
+from datetime import datetime
 
-# ------------------------------------------
+
 # Load the pre-trained Haar Cascade classifier
-# ------------------------------------------
 face_detector = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
 )
 
 # Check that the classifier loaded successfully
 if face_detector.empty():
-    print("Failed to load the face detection model.")
+    print(" Failed to load the face detection model.")
     exit()
 
-# ------------------------------------------
+
 # Open the default webcam
-# ------------------------------------------
+
 camera = cv2.VideoCapture(0)
 
 # Check that the webcam opened successfully
 if not camera.isOpened():
-    print("Could not access the webcam.")
+    print(" Failed to access the webcam.")
     exit()
 
-print("✅ Face Detection Started")
-print("Press 'q' to quit.")
 
-# ------------------------------------------
-# Main loop
-# ------------------------------------------
+# Create the captures folder if it doesn't exist
+CAPTURE_FOLDER = "captures"
+os.makedirs(CAPTURE_FOLDER, exist_ok=True)
+
+print("✅ Face Detection Started")
+print("Press 'S' to save a photo.")
+print("Press 'Q' to quit.")
+
+
+# Main Loop
+
 while True:
 
-    # Capture one frame from the webcam
+    # Capture one frame
     success, frame = camera.read()
 
-    # Stop if we couldn't read a frame
     if not success:
-        print(" Failed to read frame.")
+        print("❌ Failed to read frame.")
         break
 
-    # Convert the frame to grayscale
-    # Haar Cascades work on grayscale images
+    # Convert to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     # Detect faces
@@ -56,18 +61,18 @@ while True:
         minSize=(30, 30)
     )
 
-    # Draw a rectangle around each detected face
+    # Draw rectangles around detected faces
     for (x, y, w, h) in faces:
 
         cv2.rectangle(
-            frame,              # Image to draw on
-            (x, y),             # Top-left corner
-            (x + w, y + h),     # Bottom-right corner
-            (0, 255, 0),        # Green color (BGR)
-            2                   # Thickness
+            frame,
+            (x, y),
+            (x + w, y + h),
+            (0, 255, 0),
+            2
         )
 
-    # Display the number of faces detected
+    # Display number of detected faces
     cv2.putText(
         frame,
         f"Faces Detected: {len(faces)}",
@@ -78,13 +83,13 @@ while True:
         2
     )
 
-    # Display the instructions
+    # Display instructions
     cv2.putText(
         frame,
-        "Press Q to Quit",
+        "Press S to Save | Press Q to Quit",
         (10, 65),
         cv2.FONT_HERSHEY_SIMPLEX,
-        0.7,
+        0.6,
         (255, 255, 255),
         2
     )
@@ -92,15 +97,33 @@ while True:
     # Show the webcam feed
     cv2.imshow("OpenCV Face Detection", frame)
 
-    # Wait for keyboard input
+    # Read keyboard input
     key = cv2.waitKey(1) & 0xFF
 
-    # Quit if 'q' is pressed
-    if key == ord("q"):
+    # ------------------------------------------
+    # Save a photo when 'S' is pressed
+    # ------------------------------------------
+    if key == ord("s"):
+
+        # Generate a unique filename using the current date and time
+        filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.jpg")
+
+        # Build the full file path
+        filepath = os.path.join(CAPTURE_FOLDER, filename)
+
+        # Save the current frame
+        cv2.imwrite(filepath, frame)
+
+        print(f" Photo saved successfully: {filepath}")
+
+    # ------------------------------------------
+    # Quit when 'Q' is pressed
+    # ------------------------------------------
+    elif key == ord("q"):
         break
 
 # ------------------------------------------
-# Clean up
+# Release resources
 # ------------------------------------------
 camera.release()
 cv2.destroyAllWindows()
