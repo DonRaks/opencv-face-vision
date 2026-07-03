@@ -1,156 +1,87 @@
-# ==========================================
-# Face Detection with Eye Detection
-# Author: Donald (with Anna)
-# ==========================================
+"""
+face.py
 
-# Import required libraries
+contains the FaceDetector class that uses OpenCV's Haar Cascades to detect faces and eyes in a given frame.
+"""
+
 import cv2
-import os
-from datetime import datetime
-
-# ------------------------------------------
-# Load the face detector
-# ------------------------------------------
-face_detector = cv2.CascadeClassifier(
-    cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
-)
-
-if face_detector.empty():
-    print("Failed to load the face detection model.")
-    exit()
+from utils.drawing import Drawing
 
 
-# Load the eye detector
+class FaceDetector:
+    """
+    Detects faces and eyes using OpenCV Haar Cascades.
+    """
 
-eye_detector = cv2.CascadeClassifier(
-    cv2.data.haarcascades + "haarcascade_eye.xml"
-)
+    def __init__(self):
 
-if eye_detector.empty():
-    print("Failed to load the eye detection model.")
-    exit()
-
-
-# Open the webcam
-
-camera = cv2.VideoCapture(0)
-
-if not camera.isOpened():
-    print("Failed to access the webcam.")
-    exit()
-
-
-# Create the captures folder
-
-CAPTURE_FOLDER = "captures"
-os.makedirs(CAPTURE_FOLDER, exist_ok=True)
-
-print("Face Detection Started")
-print("Press 'S' to save a photo.")
-print("Press 'Q' to quit.")
-
-# ------------------------------------------
-# Main loop
-# ------------------------------------------
-while True:
-
-    # Read a frame from the webcam
-    success, frame = camera.read()
-
-    if not success:
-        print("Failed to read frame.")
-        break
-
-    # Convert frame to grayscale
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    # Detect faces
-    faces = face_detector.detectMultiScale(
-        gray,
-        scaleFactor=1.1,
-        minNeighbors=5,
-        minSize=(30, 30)
-    )
-
-    # Loop through every detected face
-    for (x, y, w, h) in faces:
-
-        # Draw a green rectangle around the face
-        cv2.rectangle(
-            frame,
-            (x, y),
-            (x + w, y + h),
-            (0, 255, 0),
-            2
+        # Load face detection model
+        self.face_detector = cv2.CascadeClassifier(
+            cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         )
 
-        # Create Region of Interest (ROI)
-        face_gray = gray[y:y + h, x:x + w]
-        face_color = frame[y:y + h, x:x + w]
+        # Load eye detection model
+        self.eye_detector = cv2.CascadeClassifier(
+            cv2.data.haarcascades + "haarcascade_eye.xml"
+        )
 
-        # Detect eyes inside the face
-        eyes = eye_detector.detectMultiScale(
-            face_gray,
+        if self.face_detector.empty():
+            raise RuntimeError("Failed to load face detector.")
+
+        if self.eye_detector.empty():
+            raise RuntimeError("Failed to load eye detector.")
+
+    def detect(self, frame):
+        """
+        Detect faces and eyes.
+
+        Args:
+            frame: Camera frame
+
+        Returns:
+            frame: Frame with rectangles drawn
+            face_count: Number of detected faces
+        """
+
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        faces = self.face_detector.detectMultiScale(
+            gray,
             scaleFactor=1.1,
             minNeighbors=5,
-            minSize=(20, 20)
+            minSize=(30, 30)
         )
 
-        # Draw blue rectangles around each detected eye
-        for (ex, ey, ew, eh) in eyes:
+        for (x, y, w, h) in faces:
 
-            cv2.rectangle(
-                face_color,
-                (ex, ey),
-                (ex + ew, ey + eh),
-                (255, 0, 0),
-                2
+            # Draw face rectangle
+            Drawing.draw_face(frame, x, y, w, h)
+
+            # Region of Interest
+            face_gray = gray[y:y+h, x:x+w]
+            face_color = frame[y:y+h, x:x+w]
+
+            # Detect eyes
+            eyes = self.eye_detector.detectMultiScale(
+                face_gray,
+                scaleFactor=1.1,
             )
 
-    # Display number of detected faces
-    cv2.putText(
-        frame,
-        f"Faces Detected: {len(faces)}",
-        (10, 30),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.8,
-        (0, 255, 0),
-        2
-    )
+            # Region of Interest
+            face_gray = gray[y:y+h, x:x+w]
+            face_color = frame[y:y+h, x:x+w]
 
-    # Display controls
-    cv2.putText(
-        frame,
-        "Press S to Save | Press Q to Quit",
-        (10, 65),
-        cv2.FONT_HERSHEY_SIMPLEX,
-        0.6,
-        (255, 255, 255),
-        2
-    )
+            # Detect eyes
+            eyes = self.eye_detector.detectMultiScale(
+                face_gray,
+                scaleFactor=1.1,
+                minNeighbors=5,
+                minSize=(20, 20)
+            )
 
-    # Show the frame
-    cv2.imshow("OpenCV Face Detection", frame)
+            # Draw eye rectangles
+            for (ex, ey, ew, eh) in eyes:
 
-    # Read keyboard input
-    key = cv2.waitKey(1) & 0xFF
+                Drawing.draw_eye(face_color, ex, ey, ew, eh)
 
-    # Save a photo
-    if key == ord("s"):
-
-        filename = datetime.now().strftime("%Y-%m-%d_%H-%M-%S.jpg")
-        filepath = os.path.join(CAPTURE_FOLDER, filename)
-
-        cv2.imwrite(filepath, frame)
-
-        print(f"Photo saved: {filepath}")
-
-    # Quit the application
-    elif key == ord("q"):
-        break
-
-# ------------------------------------------
-# Clean up
-# ------------------------------------------
-camera.release()
-cv2.destroyAllWindows()
+        return frame, len(faces)
