@@ -19,9 +19,9 @@ if face_detector.empty():
     print("Failed to load the face detection model.")
     exit()
 
-# ------------------------------------------
+
 # Load the eye detector
-# ------------------------------------------
+
 eye_detector = cv2.CascadeClassifier(
     cv2.data.haarcascades + "haarcascade_eye.xml"
 )
@@ -30,18 +30,18 @@ if eye_detector.empty():
     print("Failed to load the eye detection model.")
     exit()
 
-# ------------------------------------------
+
 # Open the webcam
-# ------------------------------------------
+
 camera = cv2.VideoCapture(0)
 
 if not camera.isOpened():
     print("Failed to access the webcam.")
     exit()
 
-# ------------------------------------------
+
 # Create the captures folder
-# ------------------------------------------
+
 CAPTURE_FOLDER = "captures"
 os.makedirs(CAPTURE_FOLDER, exist_ok=True)
 
